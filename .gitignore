@@ -3,10 +3,9 @@ planchesIn/*
 igcWithjpw/
 planchesIn/
 testFolder/
-planches/in/*
 planches/out/*
 planches/stock/*
-tiles/*/
+tiles/
 
 
 # Logs

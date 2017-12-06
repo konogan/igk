@@ -19,10 +19,10 @@ const server = http.createServer((req, res) => {
 
   fs.exists(pathname, function (exist) {
     if (!exist) {
-      //res.statusCode = 404;
-      //res.end(``);
-      //return;
-      pathname = 'default.png';
+      res.statusCode = 200;
+      res.end(`not necessary`);
+      return;
+      // pathname = 'default.png';
     }
 
     if (fs.statSync(pathname).isDirectory()) {

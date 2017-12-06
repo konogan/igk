@@ -5,6 +5,13 @@
   <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
   <script src="libs/leaflet.js"></script>
   <link rel="stylesheet" href="libs/leaflet.css" />
+
+  <link rel="stylesheet" href="libs/opacity/Control.Opacity.css" />
+  <script src="libs/opacity/Control.Opacity.js"></script>
+  <script src="libs/jquery/jquery-1.9.1.js"></script>
+  <script src="libs/jquery/jquery-ui-1.10.3.custom.min.js"></script>
+  <link rel="stylesheet" href="libs/jquery/jquery-ui-1.10.3.custom.min.css" />
+
   <style>
     body {
       margin: 0;
@@ -24,20 +31,28 @@
         zoomControl: false,
         center: [48.81485697596884, 2.230295999770],
         zoom: 12,
-        subdomains: []
+        subdomains: [],
+        minZoom: 12,
+        maxZoom: 22
       });
 
       // map.scrollWheelZoom.disable();
 
 
       L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        maxZoom: 22,
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
 
 
-      L.tileLayer('http://127.0.0.1:9000/tiles/{z}/{x}/{y}.png', {
+      var igkLayer = L.tileLayer('http://127.0.0.1:9000/tiles/{z}/{x}/{y}.png', {
         attribution: '(C) 2017 IGK'
       }).addTo(map);
+
+
+      var opacitySlider = new L.Control.opacitySlider();
+      map.addControl(opacitySlider);
+      opacitySlider.setOpacityLayer(igkLayer);
 
     </script>
   </body>

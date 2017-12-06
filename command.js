@@ -2,7 +2,8 @@ const glob = require("glob");
 const sharp = require('sharp');
 const fs = require('fs-extra');
 const { igcExtract, igcToBounds, lat2tile, long2tile, tile2lat, tile2long } = require('./igcTools.js');
-const ZOOMS = [12, 13, 14, 15, 16, 17, 18];
+// const ZOOMS = [12, 13, 14, 15, 16, 17, 18, 19, 20];
+const ZOOMS = [12, 13];
 const TILESIZE = 256;
 sharp.cache({ files: 1 });
 
@@ -12,12 +13,13 @@ function createTile(x, y, ZOOM) {
     const name = `${y}.png`;
     if (!fs.pathExistsSync(target + name)) {
       fs.mkdirsSync(target);
+      // create empty sharp object ans save it 
       return sharp({
         create: {
           width: TILESIZE,
           height: TILESIZE,
           channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0.5 }
+          background: { r: 0, g: 0, b: 0, alpha: 0.0 }
         }
       })
         .png()
@@ -25,14 +27,16 @@ function createTile(x, y, ZOOM) {
         .then((sharpBuffer) => {
           fs.writeFileSync(target + name, sharpBuffer, function (e) {
             if (e) {
-              Promise.reject(e);
+              Promise.reject('ici e' + e);
+            }
+            else {
+              return Promise.resolve('file created : ' + target + name);
             }
           });
-
         });
     }
     else {
-      return Promise.resolve();
+      return Promise.resolve('tile file already exist : ' + target + name);
     }
   } catch (error) {
     Promise.reject(error);
@@ -125,12 +129,6 @@ function sliceImage(file, image, ZOOM) {
 
     let pSlices = [];
 
-    // resize image
-    const resizedFile = sharp(file)
-      .resize(
-      imgSize.width,
-      imgSize.height
-      );
 
     let sX = 0;
     let sY = 0;
@@ -203,11 +201,17 @@ function sliceImage(file, image, ZOOM) {
 
         if (extract.width > 0 && extract.height > 0 && extract.width <= TILESIZE && extract.height <= TILESIZE) {
           // define Slice promise for creating a tile at this ZOOM level
+
           let pSlice = createTile(x, y, ZOOM)
-            .then(() => {
-              resizedFile
+            .then((message) => {
+              console.log(message);
+              sharp(file)
+                .clone()
+                .resize(
+                imgSize.width,
+                imgSize.height
+                )
                 .extract({ left: extract.left, top: extract.top, width: extract.width, height: extract.height })
-                .png()
                 .toBuffer()
                 .then((extractedBuffer) => {
                   return mergeTile(x, y, ZOOM, extractedBuffer, decalage);
@@ -216,9 +220,7 @@ function sliceImage(file, image, ZOOM) {
 
           pSlices.push(pSlice);
         }
-        else {
-          Promise.reject('extract error');
-        }
+
         sY++;
       }
       sX++;
@@ -235,25 +237,27 @@ glob("planches/in/*.jpg", function (er, files) {
   files.forEach((file) => {
     console.log(file);
     igcExtract(file)
-      .then((data) => {
+      .then(data => {
         return igcToBounds(data);
       })
       .then(image => {
         console.log("************START*************");
         let pSliceImage = []; // array for Slicing Promises
+
         ZOOMS.forEach(ZOOM => {
           pSliceImage.push(sliceImage(file, image, ZOOM));
         });
 
-        // resolve all Sliceing Promises
+        // resolve all Slicing Promises
         Promise
           .all(pSliceImage)
-          .then(() => {
+          .then((results) => {
             console.log("************END*************");
+            console.log(results);
             // then move the file
-            fs.moveSync(file, 'testFolder/out/' + image.fic, function (err) {
-              if (err) { throw err; }
-            });
+            // fs.moveSync(file, 'planches/out/' + image.fic, function (err) {
+            //   if (err) { throw err; }
+            // });
           })
           .catch((errors) => {
             console.log(errors);
