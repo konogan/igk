@@ -1,0 +1,45 @@
+<html>
+
+<head>
+  <title>My Maps</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  <script src="libs/leaflet.js"></script>
+  <link rel="stylesheet" href="libs/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+    }
+
+    #map {
+      height: 100vh;
+      width: 100vw;
+    }
+  </style>
+
+  <body>
+    <div id='map'></div>
+    <script type="text/javascript">
+
+      var map = L.map('map', {
+        zoomControl: false,
+        center: [48.81485697596884, 2.230295999770],
+        zoom: 12,
+        subdomains: []
+      });
+
+      // map.scrollWheelZoom.disable();
+
+
+      L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+
+      L.tileLayer('http://127.0.0.1:9000/tiles/{z}/{x}/{y}.png', {
+        attribution: '(C) 2017 IGK'
+      }).addTo(map);
+
+    </script>
+  </body>
+
+</html>

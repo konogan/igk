@@ -64,10 +64,13 @@ const igcToBounds = function (data) {
     try {
       const BL = new proj4.toPoint([_left, _bottom]);
       const BLWS = proj4.transform(source, destination, BL);
+
       const BR = new proj4.toPoint([_right, _bottom]);
       const BRWS = proj4.transform(source, destination, BR);
+
       const TL = new proj4.toPoint([_left, _top]);
       const TLWS = proj4.transform(source, destination, TL);
+
       const TR = new proj4.toPoint([_right, _top]);
       const TRWS = proj4.transform(source, destination, TR);
 
@@ -123,6 +126,7 @@ const igcExtract = function (filePath) {
         .then(dimensions => {
           const output = {
             file: originalFilePath,
+            fic: originalFilename,
             w: dimensions.width,
             h: dimensions.height,
             igc: {
@@ -164,7 +168,7 @@ function tile2lat(y, zoom) {
 module.exports.igcExtract = igcExtract;
 module.exports.igcToBounds = igcToBounds;
 module.exports.igcWorldFile = igcWorldFile;
-// module.exports.long2tile = long2tile;
-// module.exports.lat2tile = lat2tile;
-// module.exports.tile2long = tile2long;
-// module.exports.tile2lat = tile2lat;
+module.exports.long2tile = long2tile;
+module.exports.lat2tile = lat2tile;
+module.exports.tile2long = tile2long;
+module.exports.tile2lat = tile2lat;
