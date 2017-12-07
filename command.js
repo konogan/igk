@@ -3,7 +3,7 @@ const sharp = require('sharp');
 const fs = require('fs-extra');
 const { igcExtract, igcToBounds, lat2tile, long2tile, tile2lat, tile2long } = require('./igcTools.js');
 // const ZOOMS = [12, 13, 14, 15, 16, 17, 18, 19, 20];
-const ZOOMS = [12, 13, 14, 15, 16];
+const ZOOMS = [24];
 const TILESIZE = 256;
 const PLANCHES_IN = './planches/in';
 
@@ -61,6 +61,7 @@ function mergeTile(x, y, ZOOM, buffer, options = {}) {
           });
         });
       });
+
   } catch (error) {
     Promise.reject(error);
   }
@@ -201,7 +202,7 @@ function sliceImage(file, image, ZOOM) {
 
           let pSlice = createTile(x, y, ZOOM)
             .then((message) => {
-
+              //console.log(message);
               return sharp(file)
                 .clone()
                 .resize(
@@ -211,12 +212,14 @@ function sliceImage(file, image, ZOOM) {
                 .extract({ left: extract.left, top: extract.top, width: extract.width, height: extract.height })
                 .toBuffer()
                 .then((extractedBuffer) => {
+                  // return Promise.resolve('toto');
                   return mergeTile(x, y, ZOOM, extractedBuffer, decalage);
                 })
                 .catch(err => {
                   console.log('merge', err);
                 });
             });
+
           pSlices.push(pSlice);
         }
         sY++;
@@ -252,12 +255,13 @@ const getFilePaths = async (path) => {
  */
 const processDirectory = async (path) => {
   const files = await getFilePaths(path);
+
   for (let file of files) {
     if (file.substring(file.indexOf('.')) === '.jpg') {
       let fileToProcess = path + '/' + file;
       console.log(fileToProcess);
       let result = await processFile(fileToProcess);
-      return result;
+      //return result;
     }
   }
 }
@@ -276,9 +280,9 @@ const processFile = async (file) => {
     .then(image => {
       ZOOMS.forEach(ZOOM => {
         pSliceImage.push(sliceImage(file, image, ZOOM));
+
       });
 
-      // resolve all Slicing Promises
       return Promise
         .all(pSliceImage);
     });

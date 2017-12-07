@@ -33,22 +33,20 @@
         zoom: 12,
         subdomains: [],
         minZoom: 12,
-        maxZoom: 22
+        maxZoom: 20
       });
 
       // map.scrollWheelZoom.disable();
 
-
       L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-        maxZoom: 22,
+        minZoom: 12,
+        maxZoom: 20,
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
-
 
       var igkLayer = L.tileLayer('http://127.0.0.1:9000/tiles/{z}/{x}/{y}.png', {
         attribution: '(C) 2017 IGK'
       }).addTo(map);
-
 
       var opacitySlider = new L.Control.opacitySlider();
       map.addControl(opacitySlider);
