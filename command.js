@@ -8,7 +8,7 @@ const TILESIZE = 256;
 const PLANCHES_IN = './planches/in';
 
 
-//sharp.cache({ files: 1 });
+sharp.cache({ files: 1 });
 
 
 function createTile(x, y, ZOOM) {
@@ -267,24 +267,21 @@ const processDirectory = async (path) => {
  * @param {String} file 
  */
 const processFile = async (file) => {
-  return new Promise(function (resolve, reject) {
-    return igcExtract(file)
-      .then(data => {
-        return igcToBounds(data);
-      })
-      .then(image => {
-        let pSliceImage = []; // array for Slicing Promises
-        ZOOMS.forEach(ZOOM => {
-          pSliceImage.push(sliceImage(file, image, ZOOM));
-        });
-        // resolve all Slicing Promises
-        return Promise
-          .all(pSliceImage);
-      })
-      .catch((err) => {
-        reject(err);
+  let pSliceImage = []; // array for Slicing Promises
+
+  return igcExtract(file)
+    .then(data => {
+      return igcToBounds(data);
+    })
+    .then(image => {
+      ZOOMS.forEach(ZOOM => {
+        pSliceImage.push(sliceImage(file, image, ZOOM));
       });
-  })
+
+      // resolve all Slicing Promises
+      return Promise
+        .all(pSliceImage);
+    });
 }
 
 processDirectory(PLANCHES_IN);
