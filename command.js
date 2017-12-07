@@ -5,7 +5,11 @@ const { igcExtract, igcToBounds, lat2tile, long2tile, tile2lat, tile2long } = re
 // const ZOOMS = [12, 13, 14, 15, 16, 17, 18, 19, 20];
 const ZOOMS = [12, 13, 14, 15, 16];
 const TILESIZE = 256;
-sharp.cache({ files: 1 });
+const PLANCHES_IN = './planches/in';
+
+
+//sharp.cache({ files: 1 });
+
 
 function createTile(x, y, ZOOM) {
   try {
@@ -56,9 +60,6 @@ function mergeTile(x, y, ZOOM, buffer, options = {}) {
             else resolve(`${x} ${y} M`);
           });
         });
-      })
-      .catch(err => {
-        console.log('input err', x, y, err);
       });
   } catch (error) {
     Promise.reject(error);
@@ -128,29 +129,23 @@ function sliceImage(file, image, ZOOM) {
     // compute useful values
     let imgSize = computeImageSize(image, ZOOM);
     let tileBounds = computeTileBounds(image, ZOOM);
-
     let pSlices = [];
-
 
     let sX = 0;
     let sY = 0;
-
     for (let x = tileBounds.left.tile; x <= tileBounds.right.tile; x++) {
       for (let y = tileBounds.top.tile; y <= tileBounds.bottom.tile; y++) {
-
         // ce qui faut extraire de l'image d'origine resizée
         let debugString = {
           col: null,
           row: null
         }
-
         let extract = {
           width: TILESIZE,
           height: TILESIZE,
           left: 0,
           top: 0
         };
-
         // ou doit s'inserrer l'extraction sur une TILE vierge
         let decalage = {
           left: 0,
@@ -222,57 +217,76 @@ function sliceImage(file, image, ZOOM) {
                   console.log('merge', err);
                 });
             });
-
           pSlices.push(pSlice);
         }
-
         sY++;
       }
       sX++;
       sY = 0;
     }
     return Promise.all(pSlices);
-
   } catch (error) {
     Promise.reject(error);
   }
 }
 
-// iterate on all files in the input folder
-glob("planches/in/*.jpg", function (er, files) {
-  files.forEach((file) => {
+/**
+ * Recupere tous les fichiers d'un dossier
+ * @param {String} path 
+ */
+const getFilePaths = async (path) => {
+  const files = [];
+  return new Promise(function (resolve, reject) {
+    fs.readdir(path, function (err, items) {
+      if (err) {
+        reject(err);
+      }
+      resolve(items);
+    });
+  });
+}
 
-    igcExtract(file)
+/**
+ * Process tous les fichiers d'un dossier
+ * @param {String} path 
+ */
+const processDirectory = async (path) => {
+  const files = await getFilePaths(path);
+  for (let file of files) {
+    if (file.substring(file.indexOf('.')) === '.jpg') {
+      let fileToProcess = path + '/' + file;
+      console.log(fileToProcess);
+      let result = await processFile(fileToProcess);
+      return result;
+    }
+  }
+}
+
+/**
+ * Lance les process de decoupage du fichier
+ * @param {String} file 
+ */
+const processFile = async (file) => {
+  return new Promise(function (resolve, reject) {
+    return igcExtract(file)
       .then(data => {
         return igcToBounds(data);
       })
       .then(image => {
-        console.log("************START*************");
-        console.log(file);
         let pSliceImage = []; // array for Slicing Promises
-
         ZOOMS.forEach(ZOOM => {
           pSliceImage.push(sliceImage(file, image, ZOOM));
         });
-
         // resolve all Slicing Promises
         return Promise
-          .all(pSliceImage)
-          .then((results) => {
-            console.log("************END*************");
-            console.log(results);
-            // then move the file
-            // fs.moveSync(file, 'planches/out/' + image.fic, function (err) {
-            //   if (err) { throw err; }
-            // });
-          })
-          .catch((errors) => {
-            console.log(errors);
-          })
+          .all(pSliceImage);
       })
       .catch((err) => {
-        console.log('catch', err);
+        reject(err);
       });
-
   })
-});
+}
+
+processDirectory(PLANCHES_IN);
+
+
