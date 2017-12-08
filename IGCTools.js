@@ -74,33 +74,13 @@ const igcToBounds = function (data) {
       const TR = new proj4.toPoint([_right, _top]);
       const TRWS = proj4.transform(source, destination, TR);
 
-      let debug = {
-        L: _left,
-        R: _right,
-        T: _top,
-        B: _bottom
-      };
-
       let bounds =
         {
-          TL: {
-            lat: TLWS.y,
-            lng: TLWS.x
-          },
-          TR: {
-            lat: TRWS.y,
-            lng: TRWS.x
-          },
-          BL: {
-            lat: BLWS.y,
-            lng: BLWS.x
-          },
-          BR: {
-            lat: BRWS.y,
-            lng: BRWS.x
-          }
+          top: TLWS.y,
+          right: TRWS.x,
+          left: BLWS.x,
+          bottom: BRWS.y
         };
-      data.debug = debug;
       data.bounds = bounds;
       fulfill(data);
 
@@ -127,8 +107,10 @@ const igcExtract = function (filePath) {
           const output = {
             file: originalFilePath,
             fic: originalFilename,
-            w: dimensions.width,
-            h: dimensions.height,
+            size: {
+              w: dimensions.width,
+              h: dimensions.height
+            },
             igc: {
               x: dataName[0],
               y: dataName[1]
