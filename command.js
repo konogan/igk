@@ -4,7 +4,7 @@ const fs = require('fs-extra');
 const { igcExtract, igcToBounds } = require('./igcTools.js');
 const { slippySlice } = require('./slippyTools.js');
 
-const ZOOMS = '12-18';
+const ZOOMS = '12-20';
 const PLANCHES_IN = './planches/in';
 const TILES = './tiles/';
 

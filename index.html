@@ -5,12 +5,11 @@
   <meta charset="utf-8">
   <title>My Maps</title>
   <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
-  <script src="libs/leaflet.js"></script>
-  <link rel="stylesheet" href="libs/leaflet.css" />
+  <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' />
+  <link rel='stylesheet' href='https://unpkg.com/leaflet@1.2.0/dist/leaflet.css' />
   <link rel="stylesheet" href="libs/opacity/Control.Opacity.css" />
-  <script src="libs/opacity/Control.Opacity.js"></script>
-  <script src="libs/jquery/jquery-1.9.1.js"></script>
-  <script src="libs/jquery/jquery-ui-1.10.3.custom.min.js"></script>
+  <link rel="stylesheet" href="libs/L.Control.Locate.min.css" />
+  <link rel="stylesheet" href="libs/leaflet.zoomdisplay.css" />
   <link rel="stylesheet" href="libs/jquery/jquery-ui-1.10.3.custom.min.css" />
 
   <style>
@@ -26,33 +25,23 @@
 
   <body>
     <div id='map'></div>
-    <script type="text/javascript">
+    <script src='https://unpkg.com/leaflet@1.2.0/dist/leaflet-src.js'></script>
+    <script src="libs/opacity/Control.Opacity.js"></script>
+    <script src="libs/L.Control.Locate.min.js"></script>
+    <script src="libs/leaflet.zoomdisplay.js"></script>
+    <script src="libs/jquery/jquery-1.9.1.js"></script>
+    <script src="libs/jquery/jquery-ui-1.10.3.custom.min.js"></script>
+    <script src="public.js"></script>
 
-      var map = L.map('map', {
-        zoomControl: true,
-        center: [48.81485697596884, 2.230295999770],
-        zoom: 16,
-        subdomains: [],
-        minZoom: 12,
-        maxZoom: 20
-      });
-
-      // map.scrollWheelZoom.disable();
-
-      L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-        maxZoom: 20,
-        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-
-      var igkLayer = L.tileLayer('http://127.0.0.1:9000/tiles/{z}/{x}/{y}.png', {
-        attribution: '(C) 2017 IGK'
-      }).addTo(map);
-
-      var opacitySlider = new L.Control.opacitySlider();
-      map.addControl(opacitySlider);
-      opacitySlider.setOpacityLayer(igkLayer);
-
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-109275205-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'UA-109275205-1');
     </script>
+
   </body>
 
 </html>
