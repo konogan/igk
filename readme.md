@@ -4,8 +4,8 @@ IGK
 
 Slippy tile map generator, based on IGC files
 
-> **server.js**
+> **server/server.js**
 Boot a local tilemap server for debugging
 
-> **command.js**
+> **back/libs/command.js**
 Process IGC files located in planches/in
