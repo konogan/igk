@@ -1,12 +1,13 @@
 'use strict';
 
 const fs = require('fs-extra');
-const { igcExtract, igcToBounds } = require('./igcTools.js');
-const { slippySlice } = require('./slippyTools.js');
+const { igcExtract, igcToBounds } = require('./libs/igcTools.js');
+const { slippySlice } = require('./libs/slippyTools.js');
 
 const ZOOMS = '12-20';
 const PLANCHES_IN = './planches/in';
-const TILES = './tiles/';
+const PLANCHES_OUT = './planches/out';
+const TILES_FOLDER = '../app/tiles/';
 
 /**
  * Recupere tous les fichiers d'un dossier
@@ -24,6 +25,15 @@ const getFilePaths = async (path) => {
   });
 }
 
+const moveFile = async (file) => {
+  return new Promise((resolve, reject) => {
+    fs.move(`${PLANCHES_IN}/${file}`, `${PLANCHES_OUT}/${file}`, function (err) {
+      if (err) reject(err)
+      resolve('successed');
+    })
+  })
+}
+
 /**
  * Process tous les fichiers d'un dossier
  * @param {String} path 
@@ -33,10 +43,15 @@ const processDirectory = async (path) => {
 
   for (let file of files) {
     if (file.substring(file.indexOf('.')) === '.jpg') {
-      let fileToProcess = path + '/' + file;
-      console.log(fileToProcess);
-      let result = await processFile(fileToProcess);
-      //return result;
+      try {
+        let fileToProcess = path + '/' + file;
+        console.log('file', file);
+        let result = await processFile(fileToProcess);
+        let moving = await moveFile(file);
+      } catch (error) {
+        console.log(' error', error);
+        continue;
+      }
     }
   }
 }
@@ -46,21 +61,15 @@ const processDirectory = async (path) => {
  * @param {String} file 
  */
 const processFile = async (file) => {
-
-  return igcExtract(file)
-    .then(data => {
-      return igcToBounds(data);
-    })
-    .then(image => {
-      return slippySlice(
-        image.file,
-        image.bounds,
-        image.size,
-        ZOOMS,
-        TILES).catch(err => {
-          console.log('Error : ', err);
-        })
-    });
+  let datas = await igcExtract(file);
+  let image = await igcToBounds(datas);
+  let result = await slippySlice(
+    image.file,
+    image.bounds,
+    image.size,
+    ZOOMS,
+    TILES_FOLDER);
+  return result;
 }
 
 processDirectory(PLANCHES_IN);

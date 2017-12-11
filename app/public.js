@@ -29,7 +29,7 @@ let googleTerrain = new L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y
   subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
 });
 
-let igk = new L.tileLayer('http://127.0.0.1:9000/tiles/{z}/{x}/{y}.png', {
+let igk = new L.tileLayer('./tiles/{z}/{x}/{y}.png', {
   attribution: '© IGK',
   maxZoom: 20
 });

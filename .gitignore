@@ -1,11 +1,11 @@
 #specific folders
 
-back/planches/out/*
-back/planches/stock/*
+back/planches/*
+app/tiles/*
 
-back/planchesIn/*
 
-server/tiles/*
+
+node_modules/*
 
 
 

@@ -27,7 +27,7 @@ const plancheHeight = -400;
  * @param {int} x 
  * @param {int} y 
  */
-const igcWorldFile = function (data) {
+const igcWorldFile = (data) => {
   let x = data.igc.x;
   let y = data.igc.y;
   let w = data.w;
@@ -53,7 +53,7 @@ const igcWorldFile = function (data) {
  * @param {int} x 
  * @param {int} y 
  */
-const igcToBounds = function (data) {
+const igcToBounds = async (data) => {
   let x = data.igc.x;
   let y = data.igc.y;
   return new Promise(function (fulfill, reject) {
@@ -96,7 +96,7 @@ const igcToBounds = function (data) {
  * Extract igc coord from fileName 
  * @param {String} fileName 
  */
-const igcExtract = function (filePath) {
+const igcExtract = async (filePath) => {
   const originalFilePath = filePath;
   const originalFilename = filePath.split("/").pop();
   return new Promise(function (fulfill, reject) {

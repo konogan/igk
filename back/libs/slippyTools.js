@@ -1,7 +1,6 @@
 'use strict';
 const sharp = require('sharp');
 const fs = require('fs-extra');
-// var ProgressBar = require('progress');
 
 const { lat2tile, long2tile, tile2lat, tile2long } = require('./igcTools.js');
 
@@ -64,9 +63,6 @@ const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
 
 const _slippySliceAtZoom = (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
   try {
-    // console.log('');
-    // console.log('-----------------------------------------');
-    // console.log('_slippySliceAtZoom', { imagePathIn, WSG884Bounds, size, zoom, pathOut });
 
     // compute useful values
     let imgSize = _computeImageSize(WSG884Bounds, size, zoom);
@@ -76,14 +72,8 @@ const _slippySliceAtZoom = (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
     let sX = 0;
     let sY = 0;
 
-    // let total = (tileBounds.right.tile - tileBounds.left.tile) * (tileBounds.bottom.tile - tileBounds.top.tile);
+    let total = (tileBounds.right.tile - tileBounds.left.tile) * (tileBounds.bottom.tile - tileBounds.top.tile);
 
-    // var bar = new ProgressBar('  generating zoom ' + zoom + ' [:bar] :percent :etas', {
-    //   complete: '='
-    //   , incomplete: ' '
-    //   , width: 20
-    //   , total: total
-    // });
 
     for (let x = tileBounds.left.tile; x <= tileBounds.right.tile; x++) {
       for (let y = tileBounds.top.tile; y <= tileBounds.bottom.tile; y++) {
@@ -165,12 +155,14 @@ const _slippySliceAtZoom = (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
                 .then((extractedBuffer) => {
                   return _mergeTile(x, y, zoom, pathOut, extractedBuffer, decalage);
                 }).then(info => {
-                  // bar.tick();
+                  //bar.tick();
+
                 })
                 .catch(err => {
                   return Promise.reject('merge ' + err);
                 });
             });
+
           pSlices.push(pSlice);
         }
         sY++;
@@ -178,7 +170,9 @@ const _slippySliceAtZoom = (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
       sX++;
       sY = 0;
     }
+
     return Promise.all(pSlices);
+
   } catch (error) {
     return Promise.reject(error);
   }
