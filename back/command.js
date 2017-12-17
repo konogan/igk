@@ -7,7 +7,7 @@ const { slippySlice } = require('./libs/slippyTools.js');
 const ZOOMS = '12-20';
 const PLANCHES_IN = './planches/in';
 const PLANCHES_OUT = './planches/out';
-const TILES_FOLDER = '../app/tiles/';
+const TILES_FOLDER = '../app/tiles';
 
 /**
  * Recupere tous les fichiers d'un dossier
@@ -25,13 +25,8 @@ const getFilePaths = async (path) => {
   });
 }
 
-const moveFile = async (file) => {
-  return new Promise((resolve, reject) => {
-    fs.move(`${PLANCHES_IN}/${file}`, `${PLANCHES_OUT}/${file}`, function (err) {
-      if (err) reject(err)
-      resolve('successed');
-    })
-  })
+const moveFile = (file) => {
+  fs.moveSync(`${PLANCHES_IN}/${file}`, `${PLANCHES_OUT}/${file}`, { overwrite: true })
 }
 
 /**
@@ -47,7 +42,9 @@ const processDirectory = async (path) => {
         let fileToProcess = path + '/' + file;
         console.log('file', file);
         let result = await processFile(fileToProcess);
-        let moving = await moveFile(file);
+        if (result.every(res => { return res == true; })) {
+          moveFile(file);
+        }
       } catch (error) {
         console.log(' error', error);
         continue;
@@ -69,8 +66,10 @@ const processFile = async (file) => {
     image.size,
     ZOOMS,
     TILES_FOLDER);
+
   return result;
 }
+
 
 processDirectory(PLANCHES_IN);
 

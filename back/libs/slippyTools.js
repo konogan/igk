@@ -1,12 +1,14 @@
+
 'use strict';
 const sharp = require('sharp');
 const fs = require('fs-extra');
+const util = require('util');
+const path = require('path');
+// const _progress = require('cli-progress');
 
 const { lat2tile, long2tile, tile2lat, tile2long } = require('./igcTools.js');
-
-// sharp.cache({ files: 1 });
-
-const TILESIZE = 256;
+const { TILESIZE } = require('./configuration.js');
+const { sharpTileGetBuffer, sharpResizeImage, sharpExtractBuffer, sharpMergeBuffer, sharpGetBuffer } = require('./sharpTile.js');
 
 /**
  * 
@@ -38,6 +40,7 @@ const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
 
   try {
     let levelOfZooms = [];
+    let plevelOfZooms = [];
 
     if (zooms.indexOf('-') === -1) {
       levelOfZooms.push(zooms);
@@ -46,34 +49,31 @@ const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
         levelOfZooms.push(zoomLevel);
       }
     }
+    console.log(imagePathIn, levelOfZooms);
 
-    let pSliceAtZoom = [];
+
     levelOfZooms.forEach(zoomLevel => {
-      pSliceAtZoom.push(_slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut))
+      plevelOfZooms.push(_slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut));
     })
 
-    return await Promise.all(pSliceAtZoom);
+    return Promise.all(plevelOfZooms);
 
   } catch (error) {
     return Promise.reject(error);
   }
 
-
 }
 
-const _slippySliceAtZoom = (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
+
+const _computeSlices = async (imagePathIn, WSG884Bounds, size, zoom) => {
   try {
 
-    // compute useful values
-    let imgSize = _computeImageSize(WSG884Bounds, size, zoom);
-    let tileBounds = _computeTileBounds(WSG884Bounds, zoom);
-    let pSlices = [];
 
     let sX = 0;
     let sY = 0;
-
-    let total = (tileBounds.right.tile - tileBounds.left.tile) * (tileBounds.bottom.tile - tileBounds.top.tile);
-
+    let slices = [];
+    let imgSize = await _computeImageSize(WSG884Bounds, size, zoom);
+    let tileBounds = _computeTileBounds(WSG884Bounds, zoom);
 
     for (let x = tileBounds.left.tile; x <= tileBounds.right.tile; x++) {
       for (let y = tileBounds.top.tile; y <= tileBounds.bottom.tile; y++) {
@@ -138,47 +138,61 @@ const _slippySliceAtZoom = (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
           extract.top = Math.floor((sY * TILESIZE) - tileBounds.top.decalage - 1);
         }
 
+
         if (extract.width > 0 && extract.height > 0 && extract.width <= TILESIZE && extract.height <= TILESIZE) {
-          // define Slice promise for creating a tile at this ZOOM level
-
-          let pSlice = _createTile(x, y, zoom, pathOut)
-            .then((message) => {
-              //console.log(message);
-              return sharp(imagePathIn)
-                .clone()
-                .resize(
-                imgSize.width,
-                imgSize.height
-                )
-                .extract({ left: extract.left, top: extract.top, width: extract.width, height: extract.height })
-                .toBuffer()
-                .then((extractedBuffer) => {
-                  return _mergeTile(x, y, zoom, pathOut, extractedBuffer, decalage);
-                }).then(info => {
-                  //bar.tick();
-
-                })
-                .catch(err => {
-                  return Promise.reject('merge ' + err);
-                });
-            });
-
-          pSlices.push(pSlice);
+          let slice = {
+            x: x,
+            y: y,
+            extractor: { left: extract.left, top: extract.top, width: extract.width, height: extract.height },
+            decalage: decalage
+          };
+          slices.push(slice);
         }
         sY++;
       }
       sX++;
       sY = 0;
     }
-
-    return Promise.all(pSlices);
-
+    return slices;
   } catch (error) {
-    return Promise.reject(error);
+    console.log('_computeSlices', error);
   }
 }
 
-const _computeImageSize = (WSG884Bounds, size, ZOOM) => {
+const _slippySliceAtZoom = async (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
+  try {
+
+    let imgSize = await _computeImageSize(WSG884Bounds, size, zoom);
+    let slices = await _computeSlices(imagePathIn, WSG884Bounds, size, zoom);
+    let sharpImageResized = await sharpResizeImage(imagePathIn, imgSize);
+    slices.forEach(async (slice) => {
+      let sl = await _processSlice(pathOut, zoom, slice, sharpImageResized);
+    });
+
+    console.log(` processing ${slices.length} tiles at zoom ${zoom} `);
+    return true;
+  } catch (error) {
+    console.log('_slippySliceAtZoom', error);
+  }
+}
+
+const _processSlice = async (pathOut, zoom, slice, sharpImageResized) => {
+  const target = `${pathOut}/${zoom}/${slice.x}`;
+  const name = `${slice.y}.png`;
+  const myPath = path.join(target, name);
+  try {
+    let currentTileContent = await sharpTileGetBuffer(target, name);
+    let extractedBuffer = await sharpExtractBuffer(sharpImageResized, slice.extractor);
+    let mergeBuffer = await sharpMergeBuffer(currentTileContent, extractedBuffer, slice.decalage);
+    fs.writeFileSync(myPath, mergeBuffer);
+    return true;
+  } catch (error) {
+    console.log('_processSlice', error);
+  }
+}
+
+
+const _computeImageSize = async (WSG884Bounds, size, ZOOM) => {
   try {
     let x1 = tile2long(long2tile(WSG884Bounds.left, ZOOM), ZOOM);
     let x2 = tile2long(long2tile(WSG884Bounds.left, ZOOM) + 1, ZOOM);
@@ -199,8 +213,6 @@ const _computeImageSize = (WSG884Bounds, size, ZOOM) => {
   }
 
 }
-
-
 
 const _computeTileBounds = (WSG884Bounds, ZOOM) => {
   try {
@@ -232,64 +244,9 @@ const _computeTileBounds = (WSG884Bounds, ZOOM) => {
 
     return tileBounds;
   } catch (error) {
-    console.log(error);
+    console.log('_computeTileBounds', error);
   }
 }
 
-const _createTile = (x, y, ZOOM, pathOut) => {
-  try {
-    const target = `${pathOut}/${ZOOM}/${x}/`;
-    const name = `${y}.png`;
-    if (!fs.pathExistsSync(target + name)) {
-      fs.mkdirsSync(target);
-      // create empty sharp object ans save it 
-      return sharp({
-        create: {
-          width: TILESIZE,
-          height: TILESIZE,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0.0 }
-        }
-      })
-        .png()
-        .toBuffer()
-        .then((sharpBuffer) => {
-          return new Promise(function (resolve, reject) {
-            fs.writeFile(target + name, sharpBuffer, function (err) {
-              if (err) reject(err);
-              else resolve(`${x} ${y} C`);
-            });
-          });
-        });
-    }
-    else {
-      return Promise.resolve('tile file already exist : ' + target + name);
-    }
-  } catch (error) {
-    Promise.reject(error);
-  }
-}
-
-const _mergeTile = (x, y, ZOOM, pathOut, buffer, options = {}) => {
-  try {
-    const target = `${pathOut}/${ZOOM}/${x}/`;
-    let name = `${y}.png`;
-
-    return sharp(target + name)
-      .overlayWith(buffer, options)
-      .toBuffer()
-      .then(sharpBuffer => {
-        return new Promise(function (resolve, reject) {
-          fs.writeFile(target + name, sharpBuffer, function (err) {
-            if (err) reject(err);
-            else resolve(`${x} ${y} M`);
-          });
-        });
-      });
-
-  } catch (error) {
-    Promise.reject(error);
-  }
-}
 
 module.exports.slippySlice = slippySlice;
