@@ -49,14 +49,16 @@ const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
         levelOfZooms.push(zoomLevel);
       }
     }
-    console.log(imagePathIn, levelOfZooms);
+    // levelOfZooms.forEach(zoomLevel => {
+    //   plevelOfZooms.push(_slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut));
+    // })
+    // return Promise.all(plevelOfZooms);
 
+    levelOfZooms.forEach(async (zoomLevel) => {
+      await _slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut);
+    });
 
-    levelOfZooms.forEach(zoomLevel => {
-      plevelOfZooms.push(_slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut));
-    })
-
-    return Promise.all(plevelOfZooms);
+    return Promise.resolve(true);
 
   } catch (error) {
     return Promise.reject(error);
@@ -138,7 +140,6 @@ const _computeSlices = async (imagePathIn, WSG884Bounds, size, zoom) => {
           extract.top = Math.floor((sY * TILESIZE) - tileBounds.top.decalage - 1);
         }
 
-
         if (extract.width > 0 && extract.height > 0 && extract.width <= TILESIZE && extract.height <= TILESIZE) {
           let slice = {
             x: x,
@@ -161,22 +162,20 @@ const _computeSlices = async (imagePathIn, WSG884Bounds, size, zoom) => {
 
 const _slippySliceAtZoom = async (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
   try {
-
     let imgSize = await _computeImageSize(WSG884Bounds, size, zoom);
     let slices = await _computeSlices(imagePathIn, WSG884Bounds, size, zoom);
     let sharpImageResized = await sharpResizeImage(imagePathIn, imgSize);
-    slices.forEach(async (slice) => {
-      let sl = await _processSlice(pathOut, zoom, slice, sharpImageResized);
-    });
 
-    console.log(` processing ${slices.length} tiles at zoom ${zoom} `);
+    slices.forEach(async (slice) => {
+      let sl = await _processSlice(pathOut, zoom, slice, sharpImageResized, imagePathIn);
+    });
     return true;
   } catch (error) {
-    console.log('_slippySliceAtZoom', error);
+    console.log('_slippySliceAtZoom : ' + error);
   }
 }
 
-const _processSlice = async (pathOut, zoom, slice, sharpImageResized) => {
+const _processSlice = async (pathOut, zoom, slice, sharpImageResized, imagePathIn) => {
   const target = `${pathOut}/${zoom}/${slice.x}`;
   const name = `${slice.y}.png`;
   const myPath = path.join(target, name);
@@ -184,10 +183,12 @@ const _processSlice = async (pathOut, zoom, slice, sharpImageResized) => {
     let currentTileContent = await sharpTileGetBuffer(target, name);
     let extractedBuffer = await sharpExtractBuffer(sharpImageResized, slice.extractor);
     let mergeBuffer = await sharpMergeBuffer(currentTileContent, extractedBuffer, slice.decalage);
+    console.log(path.basename(imagePathIn), zoom, JSON.stringify(slice), `${slice.x}/${slice.y}.png`);
+
     fs.writeFileSync(myPath, mergeBuffer);
     return true;
   } catch (error) {
-    console.log('_processSlice', error);
+    console.log('_processSlice : ', error);
   }
 }
 

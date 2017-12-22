@@ -4,26 +4,11 @@ const fs = require('fs-extra');
 const { igcExtract, igcToBounds } = require('./libs/igcTools.js');
 const { slippySlice } = require('./libs/slippyTools.js');
 
-const ZOOMS = '12-20';
-const PLANCHES_IN = './planches/in';
-const PLANCHES_OUT = './planches/out';
-const TILES_FOLDER = '../app/tiles';
+const ZOOMS = '12-13';
+const PLANCHES_IN = __dirname + '/planches/in';
+const PLANCHES_OUT = __dirname + '/planches/out';
+const TILES_FOLDER = __dirname + '/../app/tilesTest';
 
-/**
- * Recupere tous les fichiers d'un dossier
- * @param {String} path 
- */
-const getFilePaths = async (path) => {
-  const files = [];
-  return new Promise(function (resolve, reject) {
-    fs.readdir(path, function (err, items) {
-      if (err) {
-        reject(err);
-      }
-      resolve(items);
-    });
-  });
-}
 
 const moveFile = (file) => {
   fs.moveSync(`${PLANCHES_IN}/${file}`, `${PLANCHES_OUT}/${file}`, { overwrite: true })
@@ -34,22 +19,27 @@ const moveFile = (file) => {
  * @param {String} path 
  */
 const processDirectory = async (path) => {
-  const files = await getFilePaths(path);
-
-  for (let file of files) {
-    if (file.substring(file.indexOf('.')) === '.jpg') {
-      try {
-        let fileToProcess = path + '/' + file;
-        console.log('file', file);
-        let result = await processFile(fileToProcess);
-        if (result.every(res => { return res == true; })) {
-          moveFile(file);
+  try {
+    const files = fs.readdirSync(path);
+    if (files.length === 0) {
+      console.log('pas de fichier a traiter');
+    }
+    for (let file of files) {
+      if (file.substring(file.indexOf('.')) === '.jpg') {
+        try {
+          let fileToProcess = path + '/' + file;
+          let result = await processFile(fileToProcess);
+          // if (result.every(res => { return res == true; })) {
+          //moveFile(file);
+          // }
+        } catch (error) {
+          console.log(' error', error);
+          continue;
         }
-      } catch (error) {
-        console.log(' error', error);
-        continue;
       }
     }
+  } catch (error) {
+    console.log('processDirectory', error);
   }
 }
 
@@ -58,16 +48,20 @@ const processDirectory = async (path) => {
  * @param {String} file 
  */
 const processFile = async (file) => {
-  let datas = await igcExtract(file);
-  let image = await igcToBounds(datas);
-  let result = await slippySlice(
-    image.file,
-    image.bounds,
-    image.size,
-    ZOOMS,
-    TILES_FOLDER);
+  try {
+    let datas = await igcExtract(file);
+    let image = await igcToBounds(datas);
+    let result = await slippySlice(
+      image.file,
+      image.bounds,
+      image.size,
+      ZOOMS,
+      TILES_FOLDER);
+    return result;
+  } catch (error) {
+    console.log('processFile : ', error);
+  }
 
-  return result;
 }
 
 

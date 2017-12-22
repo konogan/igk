@@ -1,8 +1,10 @@
 #specific folders
 
 back/planches/out/
+back/planches/in/
 back/planches/stock/
 app/tiles/*
+app/tilesTest/*
 
 
 

@@ -48,11 +48,13 @@ const isValidTile = async (f) => {
  */
 
 const sharpTileGetBuffer = async (_path, _file) => {
+  //console.log(' 1 - sharpTileGetBuffer');
   let myFullPath = path.join(_path, _file);
   try {
     let content = await sharpEmptyTileBuffer();
     let tV = await isValidTile(myFullPath);
     if (!tV && fs.pathExistsSync(myFullPath)) {
+      console.log('invalide tile, need to rebuilt it', _file);
       fs.unlinkSync(myFullPath);
     }
     fs.outputFileSync(myFullPath, content);
@@ -127,6 +129,7 @@ const sharpResizeImage = async (imagePathIn, size) => {
 const sharpExtractBuffer = async (sharpResizedBuffer, extractor) => {
   return await new Promise((resolve, reject) => {
     try {
+      //console.log(' 2 - sharpExtractBuffer from image');
       sharp(sharpResizedBuffer)
         .extract(extractor)
         .toBuffer()
@@ -145,6 +148,7 @@ const sharpExtractBuffer = async (sharpResizedBuffer, extractor) => {
 const sharpMergeBuffer = async (tileBuffer, buffer, decalage) => {
   return await new Promise((resolve, reject) => {
     try {
+      //console.log(' 3 - sharpMergeBuffer on tile');
       sharp(tileBuffer)
         .overlayWith(buffer, decalage)
         .png()
