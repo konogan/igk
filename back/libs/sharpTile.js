@@ -47,25 +47,28 @@ const isValidTile = async (f) => {
  * si son contenu n'est pas valide : la remplace
  */
 
-const sharpTileGetBuffer = async (_path, _file) => {
-  //console.log(' 1 - sharpTileGetBuffer');
-  let myFullPath = path.join(_path, _file);
-  try {
-    let content = await sharpEmptyTileBuffer();
-    let tV = await isValidTile(myFullPath);
-    if (!tV && fs.pathExistsSync(myFullPath)) {
-      console.log('invalide tile, need to rebuilt it', _file);
-      fs.unlinkSync(myFullPath);
+const sharpTileGetBuffer = (_path, _file) => {
+  return new Promise((resolve, reject) => {
+    let myFullPath = path.join(_path, _file);
+    try {
+      sharpEmptyTileBuffer().then((content) => {
+        isValidTile(myFullPath).then((tV) => {
+          if (!tV && fs.pathExistsSync(myFullPath)) {
+            console.log('invalide tile, need to rebuilt it', _file);
+            fs.unlinkSync(myFullPath);
+          }
+          fs.outputFileSync(myFullPath, content);
+          resolve(fs.readFileSync(myFullPath));
+        })
+      });
+    } catch (error) {
+      reject('sharpTileGetBuffer : ' + error);
     }
-    fs.outputFileSync(myFullPath, content);
-    return fs.readFileSync(myFullPath);
-  } catch (error) {
-    throw new Error('sharpTileGetBuffer : ' + error);
-  }
+  });
 }
 
-const sharpEmptyTileBuffer = async () => {
-  return await new Promise((resolve, reject) => {
+const sharpEmptyTileBuffer = () => {
+  return new Promise((resolve, reject) => {
     try {
       sharp({
         create: {

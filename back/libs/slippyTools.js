@@ -4,6 +4,9 @@ const sharp = require('sharp');
 const fs = require('fs-extra');
 const util = require('util');
 const path = require('path');
+
+require('console-group').install();
+
 // const _progress = require('cli-progress');
 
 const { lat2tile, long2tile, tile2lat, tile2long } = require('./igcTools.js');
@@ -20,45 +23,15 @@ const { sharpTileGetBuffer, sharpResizeImage, sharpExtractBuffer, sharpMergeBuff
  */
 
 const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
-  if (typeof imagePathIn === 'undefined') {
-    return Promise.reject('imagePathIn is missing / not defined');
-  }
-  if (typeof WSG884Bounds === 'undefined' ||
-    typeof WSG884Bounds.top === 'undefined' ||
-    typeof WSG884Bounds.bottom === 'undefined' ||
-    typeof WSG884Bounds.left === 'undefined' ||
-    typeof WSG884Bounds.right === 'undefined'
-  ) {
-    return Promise.reject('WSG884Bounds is missing / not defined / not well defined');
-  }
-  if (typeof zooms === 'undefined') {
-    return Promise.reject('zoom is missing / not defined');
-  }
-  if (typeof pathOut === 'undefined') {
-    return Promise.reject('pathOut is missing / not defined');
-  }
 
   try {
-    let levelOfZooms = [];
     let plevelOfZooms = [];
+    let levelOfZooms = _levelsOfZoom(zooms);
 
-    if (zooms.indexOf('-') === -1) {
-      levelOfZooms.push(zooms);
-    } else {
-      for (let zoomLevel = zooms.split('-')[0]; zoomLevel <= zooms.split('-')[1]; zoomLevel++) {
-        levelOfZooms.push(zoomLevel);
-      }
-    }
-    // levelOfZooms.forEach(zoomLevel => {
-    //   plevelOfZooms.push(_slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut));
-    // })
-    // return Promise.all(plevelOfZooms);
-
-    levelOfZooms.forEach(async (zoomLevel) => {
+    for (const zoomLevel of levelOfZooms) {
+      console.log('');
       await _slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut);
-    });
-
-    return Promise.resolve(true);
+    }
 
   } catch (error) {
     return Promise.reject(error);
@@ -66,10 +39,20 @@ const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
 
 }
 
+const _levelsOfZoom = (zoomString) => {
+  let levelOfZooms = [];
+  if (zoomString.indexOf('-') === -1) {
+    levelOfZooms.push(zoomString);
+  } else {
+    for (let zoomLevel = zoomString.split('-')[0]; zoomLevel <= zoomString.split('-')[1]; zoomLevel++) {
+      levelOfZooms.push(zoomLevel);
+    }
+  }
+  return levelOfZooms;
+}
 
 const _computeSlices = async (imagePathIn, WSG884Bounds, size, zoom) => {
   try {
-
 
     let sX = 0;
     let sY = 0;
@@ -162,34 +145,49 @@ const _computeSlices = async (imagePathIn, WSG884Bounds, size, zoom) => {
 
 const _slippySliceAtZoom = async (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
   try {
+    console.group(`_slippySliceAtZoom ${zoom}`);
     let imgSize = await _computeImageSize(WSG884Bounds, size, zoom);
+    console.log(`imgSize is OK`);
     let slices = await _computeSlices(imagePathIn, WSG884Bounds, size, zoom);
+    console.log(`slices are OK`);
     let sharpImageResized = await sharpResizeImage(imagePathIn, imgSize);
+    console.log(`img is resized `);
 
-    slices.forEach(async (slice) => {
-      let sl = await _processSlice(pathOut, zoom, slice, sharpImageResized, imagePathIn);
-    });
-    return true;
+    console.group(`Slices : `);
+    let tempSlice = 1;
+    for (const slice of slices) {
+      console.group(`Slice ${tempSlice} : `);
+      await _processSlice(pathOut, zoom, slice, sharpImageResized, imagePathIn);
+      tempSlice++;
+      console.groupEnd();
+    }
+    console.groupEnd();
+    console.groupEnd();
+
   } catch (error) {
     console.log('_slippySliceAtZoom : ' + error);
   }
 }
 
 const _processSlice = async (pathOut, zoom, slice, sharpImageResized, imagePathIn) => {
+  console.group(`slice start `);
   const target = `${pathOut}/${zoom}/${slice.x}`;
   const name = `${slice.y}.png`;
   const myPath = path.join(target, name);
   try {
     let currentTileContent = await sharpTileGetBuffer(target, name);
+    console.log(`currentTileContent OK`);
     let extractedBuffer = await sharpExtractBuffer(sharpImageResized, slice.extractor);
+    console.log(`extractedBuffer OK`);
     let mergeBuffer = await sharpMergeBuffer(currentTileContent, extractedBuffer, slice.decalage);
-    console.log(path.basename(imagePathIn), zoom, JSON.stringify(slice), `${slice.x}/${slice.y}.png`);
-
+    console.log(`mergeBuffer OK`);
     fs.writeFileSync(myPath, mergeBuffer);
-    return true;
+    console.log(`${slice.x}/${slice.y}.png OK`)
+
   } catch (error) {
-    console.log('_processSlice : ', error);
+    console.log('_processSlice ERROR', error);
   }
+  console.groupEnd();
 }
 
 
