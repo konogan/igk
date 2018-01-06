@@ -4,10 +4,7 @@ const sharp = require('sharp');
 const fs = require('fs-extra');
 const util = require('util');
 const path = require('path');
-
-// require('console-group').install();
-
-// const _progress = require('cli-progress');
+const progressBar = require('cli-progress');
 
 const { lat2tile, long2tile, tile2lat, tile2long } = require('./igcTools.js');
 const { TILESIZE } = require('./configuration.js');
@@ -29,7 +26,6 @@ const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
     let levelOfZooms = _levelsOfZoom(zooms);
 
     for (const zoomLevel of levelOfZooms) {
-      // console.log('');
       await _slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut);
     }
 
@@ -145,36 +141,28 @@ const _computeSlices = async (imagePathIn, WSG884Bounds, size, zoom) => {
 
 const _slippySliceAtZoom = async (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
   try {
-    //console.group(`_slippySliceAtZoom ${zoom}`);
+    var zoomBar = new progressBar.Bar({
+      format: 'zoom level ' + zoom + ' [{bar}] {percentage}% | ETA: {eta}s | {value}/{total}'
+    }, progressBar.Presets.shades_classic);
+
+
     let imgSize = await _computeImageSize(WSG884Bounds, size, zoom);
-    //console.log(`imgSize is OK`);
     let slices = await _computeSlices(imagePathIn, WSG884Bounds, size, zoom);
-    //console.log(`slices are OK`);
     let sharpImageResized = await sharpResizeImage(imagePathIn, imgSize);
-    //console.log(`img is resized `);
-
-    //console.group(`Slices : `);
-    let tempSlice = 1;
+    zoomBar.start(slices.length, 0);
     for (const slice of slices) {
-      //console.group(`Slice ${tempSlice} : `);
       await _processSlice(pathOut, zoom, slice, sharpImageResized, imagePathIn);
-      tempSlice++;
-      //console.groupEnd();
+      zoomBar.increment();
     }
-
-
     // each slices can be resolve simultanuously
     // let pSlices = [];
     // for (const slice of slices) {
     //   pSlices.push(await _processSlice(pathOut, zoom, slice, sharpImageResized, imagePathIn));
     // }
     // await Promise.all(pSlices);
-
-    //console.groupEnd();
-    //console.groupEnd();
-
+    zoomBar.stop();
   } catch (error) {
-    //console.log('_slippySliceAtZoom : ' + error);
+    console.log('_slippySliceAtZoom : ' + error);
   }
 }
 
@@ -185,16 +173,12 @@ const _processSlice = async (pathOut, zoom, slice, sharpImageResized, imagePathI
   const myPath = path.join(target, name);
   try {
     let currentTileContent = await sharpTileGetBuffer(target, name);
-    //console.log(`currentTileContent OK`);
     let extractedBuffer = await sharpExtractBuffer(sharpImageResized, slice.extractor);
-    //console.log(`extractedBuffer OK`);
     let mergeBuffer = await sharpMergeBuffer(currentTileContent, extractedBuffer, slice.decalage);
-    //console.log(`mergeBuffer OK`);
     fs.writeFileSync(myPath, mergeBuffer);
-    //console.log(`${slice.x}/${slice.y}.png OK`)
 
   } catch (error) {
-    //console.log('_processSlice ERROR', error);
+    console.log('_processSlice ERROR', error);
   }
   //console.groupEnd();
 }
@@ -217,7 +201,7 @@ const _computeImageSize = async (WSG884Bounds, size, ZOOM) => {
     }
     return result;
   } catch (error) {
-    //console.log(error);
+    console.log(error);
   }
 
 }
@@ -252,7 +236,7 @@ const _computeTileBounds = (WSG884Bounds, ZOOM) => {
 
     return tileBounds;
   } catch (error) {
-    //console.log('_computeTileBounds', error);
+    console.log('_computeTileBounds', error);
   }
 }
 

@@ -4,7 +4,7 @@ const fs = require('fs-extra');
 const { igcExtract, igcToBounds } = require('./libs/igcTools.js');
 const { slippySlice } = require('./libs/slippyTools.js');
 
-const ZOOMS = '12-14';
+const ZOOMS = '12-17';
 const PLANCHES_IN = __dirname + '/planches/in';
 const PLANCHES_OUT = __dirname + '/planches/out';
 const TILES_FOLDER = __dirname + '/../app/tiles';
@@ -28,7 +28,7 @@ const processDirectory = async (path) => {
       if (file.substring(file.indexOf('.')) === '.jpg') {
         try {
           let fileToProcess = path + '/' + file;
-          // console.log('fileToProcess', fileToProcess);
+          console.log('fileToProcess', file);
           let result = await processFile(fileToProcess);
           // if (result.every(res => { return res == true; })) {
           //moveFile(file);
@@ -53,7 +53,6 @@ const processDirectory = async (path) => {
  */
 const processFile = async (file) => {
   try {
-    console.log('processFile', file);
     let datas = await igcExtract(file);
     let image = await igcToBounds(datas);
     let result = await slippySlice(

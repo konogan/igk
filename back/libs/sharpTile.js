@@ -8,6 +8,10 @@ const { TILESIZE } = require('./configuration.js');
 
 const isValidTileSync = async (f) => {
   try {
+    if (!fs.pathExistsSync(f)) {
+      return false;
+    }
+
     return await sharp(f)
       .metadata()
       .then(metadata => {
@@ -38,6 +42,9 @@ const sharpTileGetBuffer = (_path, _file) => {
               if (!tV && fs.pathExistsSync(myFullPath)) {
                 console.log('invalide tile, need to rebuilt it', _file);
                 fs.unlinkSync(myFullPath);
+
+              }
+              if (!tV) {
                 fs.outputFileSync(myFullPath, content);
               }
               resolve(fs.readFileSync(myFullPath));
