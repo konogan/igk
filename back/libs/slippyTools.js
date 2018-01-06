@@ -5,13 +5,13 @@ const fs = require('fs-extra');
 const util = require('util');
 const path = require('path');
 
-require('console-group').install();
+// require('console-group').install();
 
 // const _progress = require('cli-progress');
 
 const { lat2tile, long2tile, tile2lat, tile2long } = require('./igcTools.js');
 const { TILESIZE } = require('./configuration.js');
-const { sharpTileGetBuffer, sharpResizeImage, sharpExtractBuffer, sharpMergeBuffer, sharpGetBuffer } = require('./sharpTile.js');
+const { sharpTileGetBuffer, sharpResizeImage, sharpExtractBuffer, sharpMergeBuffer } = require('./sharpTile.js');
 
 /**
  * 
@@ -29,7 +29,7 @@ const slippySlice = async (imagePathIn, WSG884Bounds, size, zooms, pathOut) => {
     let levelOfZooms = _levelsOfZoom(zooms);
 
     for (const zoomLevel of levelOfZooms) {
-      console.log('');
+      // console.log('');
       await _slippySliceAtZoom(imagePathIn, WSG884Bounds, size, zoomLevel, pathOut);
     }
 
@@ -145,49 +145,58 @@ const _computeSlices = async (imagePathIn, WSG884Bounds, size, zoom) => {
 
 const _slippySliceAtZoom = async (imagePathIn, WSG884Bounds, size, zoom, pathOut) => {
   try {
-    console.group(`_slippySliceAtZoom ${zoom}`);
+    //console.group(`_slippySliceAtZoom ${zoom}`);
     let imgSize = await _computeImageSize(WSG884Bounds, size, zoom);
-    console.log(`imgSize is OK`);
+    //console.log(`imgSize is OK`);
     let slices = await _computeSlices(imagePathIn, WSG884Bounds, size, zoom);
-    console.log(`slices are OK`);
+    //console.log(`slices are OK`);
     let sharpImageResized = await sharpResizeImage(imagePathIn, imgSize);
-    console.log(`img is resized `);
+    //console.log(`img is resized `);
 
-    console.group(`Slices : `);
+    //console.group(`Slices : `);
     let tempSlice = 1;
     for (const slice of slices) {
-      console.group(`Slice ${tempSlice} : `);
+      //console.group(`Slice ${tempSlice} : `);
       await _processSlice(pathOut, zoom, slice, sharpImageResized, imagePathIn);
       tempSlice++;
-      console.groupEnd();
+      //console.groupEnd();
     }
-    console.groupEnd();
-    console.groupEnd();
+
+
+    // each slices can be resolve simultanuously
+    // let pSlices = [];
+    // for (const slice of slices) {
+    //   pSlices.push(await _processSlice(pathOut, zoom, slice, sharpImageResized, imagePathIn));
+    // }
+    // await Promise.all(pSlices);
+
+    //console.groupEnd();
+    //console.groupEnd();
 
   } catch (error) {
-    console.log('_slippySliceAtZoom : ' + error);
+    //console.log('_slippySliceAtZoom : ' + error);
   }
 }
 
 const _processSlice = async (pathOut, zoom, slice, sharpImageResized, imagePathIn) => {
-  console.group(`slice start `);
+  //console.group(`slice start `);
   const target = `${pathOut}/${zoom}/${slice.x}`;
   const name = `${slice.y}.png`;
   const myPath = path.join(target, name);
   try {
     let currentTileContent = await sharpTileGetBuffer(target, name);
-    console.log(`currentTileContent OK`);
+    //console.log(`currentTileContent OK`);
     let extractedBuffer = await sharpExtractBuffer(sharpImageResized, slice.extractor);
-    console.log(`extractedBuffer OK`);
+    //console.log(`extractedBuffer OK`);
     let mergeBuffer = await sharpMergeBuffer(currentTileContent, extractedBuffer, slice.decalage);
-    console.log(`mergeBuffer OK`);
+    //console.log(`mergeBuffer OK`);
     fs.writeFileSync(myPath, mergeBuffer);
-    console.log(`${slice.x}/${slice.y}.png OK`)
+    //console.log(`${slice.x}/${slice.y}.png OK`)
 
   } catch (error) {
-    console.log('_processSlice ERROR', error);
+    //console.log('_processSlice ERROR', error);
   }
-  console.groupEnd();
+  //console.groupEnd();
 }
 
 
@@ -208,7 +217,7 @@ const _computeImageSize = async (WSG884Bounds, size, ZOOM) => {
     }
     return result;
   } catch (error) {
-    console.log(error);
+    //console.log(error);
   }
 
 }
@@ -243,7 +252,7 @@ const _computeTileBounds = (WSG884Bounds, ZOOM) => {
 
     return tileBounds;
   } catch (error) {
-    console.log('_computeTileBounds', error);
+    //console.log('_computeTileBounds', error);
   }
 }
 

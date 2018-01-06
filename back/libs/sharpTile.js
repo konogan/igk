@@ -6,26 +6,7 @@ const fs = require('fs-extra');
 const { TILESIZE } = require('./configuration.js');
 
 
-
-const isDir = async (f) => {
-  try {
-    return (await fs.stat(f)).isDirectory();
-  }
-  catch (e) {
-    return false;
-  }
-}
-
-const isFile = async (f) => {
-  try {
-    return (await fs.stat(f)).isFile();
-  }
-  catch (e) {
-    return false;
-  }
-}
-
-const isValidTile = async (f) => {
+const isValidTileSync = async (f) => {
   try {
     return await sharp(f)
       .metadata()
@@ -39,7 +20,6 @@ const isValidTile = async (f) => {
   }
 }
 
-
 /**
  * retourne le buffer sharp d'une tuile
  * si cette derniere n'existe pas : la fabrique
@@ -51,16 +31,18 @@ const sharpTileGetBuffer = (_path, _file) => {
   return new Promise((resolve, reject) => {
     let myFullPath = path.join(_path, _file);
     try {
-      sharpEmptyTileBuffer().then((content) => {
-        isValidTile(myFullPath).then((tV) => {
-          if (!tV && fs.pathExistsSync(myFullPath)) {
-            console.log('invalide tile, need to rebuilt it', _file);
-            fs.unlinkSync(myFullPath);
-          }
-          fs.outputFileSync(myFullPath, content);
-          resolve(fs.readFileSync(myFullPath));
-        })
-      });
+      sharpEmptyTileBuffer()
+        .then((content) => {
+          isValidTileSync(myFullPath)
+            .then((tV) => {
+              if (!tV && fs.pathExistsSync(myFullPath)) {
+                console.log('invalide tile, need to rebuilt it', _file);
+                fs.unlinkSync(myFullPath);
+                fs.outputFileSync(myFullPath, content);
+              }
+              resolve(fs.readFileSync(myFullPath));
+            })
+        });
     } catch (error) {
       reject('sharpTileGetBuffer : ' + error);
     }
@@ -92,23 +74,6 @@ const sharpEmptyTileBuffer = () => {
   });
 }
 
-const sharpGetBuffer = (imagePathIn) => {
-  return new Promise((resolve, reject) => {
-    try {
-      sharp(imagePathIn)
-        .png()
-        .toBuffer()
-        .then(buffer => {
-          resolve(buffer);
-        })
-        .catch(error => {
-          reject(error);
-        });
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
 
 const sharpResizeImage = async (imagePathIn, size) => {
   return await new Promise((resolve, reject) => {
@@ -173,5 +138,4 @@ module.exports.sharpEmptyTileBuffer = sharpEmptyTileBuffer;
 module.exports.sharpResizeImage = sharpResizeImage;
 module.exports.sharpExtractBuffer = sharpExtractBuffer;
 module.exports.sharpMergeBuffer = sharpMergeBuffer;
-module.exports.sharpGetBuffer = sharpGetBuffer;
 module.exports.sharpTileGetBuffer = sharpTileGetBuffer;
